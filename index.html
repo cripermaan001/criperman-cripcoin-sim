@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Criperman: Cripcoin Sim</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+        :root {
+            --bg: #0a0f1c;
+            --card: #1a2338;
+            --green: #22c55e;
+            --red: #ef4444;
+            --accent: #60a5fa;
+            --text: #e2e8f0;
+            --border: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0a0f1c, #1e2937);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 22px 20px;
+            border-radius: 22px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.65);
+            width: 100%;
+            max-width: 520px;
+            border: 1px solid var(--border);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(148,163,184,0.18);
+            border-radius: 16px;
+            padding: 10px 14px;
+            font-weight: 800;
+            color: white;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+        }
+
+        .logo-icon {
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .rank-badge {
+            padding: 8px 22px;
+            border-radius: 34px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            color: #091a2d;
+            letter-spacing: 0.04em;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #60a5fa, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.06);
+            padding: 14px;
+            border-radius: 14px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-label { font-size: 0.8rem; color: #94a3b8; }
+        .stat-value { font-size: 1.35rem; font-weight: 700; margin-top: 6px; }
+
+        .price-display {
+            font-size: 3rem;
+            font-weight: 800;
+            text-align: center;
+            margin: 10px 0;
+            transition: color 0.3s ease;
+        }
+
+        .profit {
+            text-align: center;
+            font-size: 1.05rem;
+            margin-bottom: 16px;
+            color: #94a3b8;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 230px;
+            width: 100%;
+            margin: 18px 0 20px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+        }
+
+        canvas { width: 100% !important; height: 100% !important; }
+
+        .amount-controls {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 14px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        button:active { transform: scale(0.97); }
+        button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        .buy-btn { background: linear-gradient(135deg, #22c55e, #4ade80); color: #0f172a; }
+        .sell-btn { background: linear-gradient(135deg, #ef4444, #f87171); color: white; }
+
+        .amount-btn {
+            padding: 12px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .amount-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: transparent;
+        }
+
+        #event-log {
+            min-height: 54px;
+            padding: 14px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            text-align: center;
+            margin: 16px 0;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+        }
+
+        .trade-history {
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+        .trade-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(148,163,184,0.12);
+        }
+
+        .pause-btn {
+            padding: 8px 16px;
+            background: #475569;
+            border-radius: 10px;
+            font-size: 0.92rem;
+            color: #e2e8f0;
+            border: 1px solid rgba(148,163,184,0.16);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon"><img src="logo.png" alt="Cripcoin logo"></div>
+            <span>Cripcoin</span>
+        </div>
+        <h1>Criperman Sim</h1>
+        <button id="pauseBtn" class="pause-btn">⏸ Pause</button>
+    </div>
+
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-label">Balans</div>
+            <div class="stat-value" id="balance">$100.00</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Coinlar</div>
+            <div class="stat-value" id="coins">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Umumiy</div>
+            <div class="stat-value" id="totalWorth">$100.00</div>
+        </div>
+    </div>
+
+    <div class="price-display" id="price-tag">$50.00</div>
+    <div class="profit" id="profitDisplay">+0.00$ (0%)</div>
+
+    <div id="event-log">Bozorga xush kelibsiz! 🚀</div>
+
+    <div class="chart-wrapper">
+        <canvas id="priceChart"></canvas>
+    </div>
+
+    <div class="amount-controls">
+        <button class="amount-btn active" data-amount="1">1</button>
+        <button class="amount-btn" data-amount="10">10</button>
+        <button class="amount-btn" data-amount="50">50</button>
+        <button class="amount-btn" data-amount="max">MAX</button>
+    </div>
+
+    <div class="controls">
+        <button class="buy-btn" onclick="buy()">BUY</button>
+        <button class="sell-btn" onclick="sell()">SELL</button>
+    </div>
+
+    <div class="trade-history">
+        <strong>Savdo tarixi:</strong>
+        <div id="history"></div>
+    </div>
+
+    <p style="text-align:center; margin-top:20px; font-size:0.8rem; color:#64748b;">
+        Maslahat: <span id="tip">Arzon paytda sotib ol!</span>
+    </p>
+</div>
+
+<div id="toast" style="display:none;"><span id="toast-icon">🏆</span><span id="toast-msg">Achievement unlocked!</span></div>
+
+<script>
+    let balance = 100;
+    let coins = 0;
+    let currentPrice = 50;
+    let priceHistory = [50, 51];
+    let labels = [0, 1];
+    let counter = 2;
+    let isPaused = false;
+    let tradeHistory = [];
+    const STORAGE_KEY = 'cripcoin_state';
+
+    const savedState = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (savedState) {
+        balance = savedState.balance ?? balance;
+        coins = savedState.coins ?? coins;
+        currentPrice = savedState.currentPrice ?? currentPrice;
+        priceHistory = Array.isArray(savedState.priceHistory) && savedState.priceHistory.length ? savedState.priceHistory : priceHistory;
+        labels = Array.isArray(savedState.labels) && savedState.labels.length ? savedState.labels : labels;
+        counter = savedState.counter ?? counter;
+        isPaused = savedState.isPaused ?? isPaused;
+        tradeHistory = Array.isArray(savedState.tradeHistory) ? savedState.tradeHistory : tradeHistory;
+    }
+
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Cripcoin',
+                data: priceHistory,
+                borderColor: '#60a5fa',
+                borderWidth: 3,
+                tension: 0.35,
+                pointRadius: 0,
+                fill: true,
+                backgroundColor: 'rgba(96, 165, 250, 0.18)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { display: false },
+                y: {
+                    grid: { color: '#334155' },
+                    ticks: { color: '#94a3b8', padding: 10 }
+                }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    function updateUI() {
+        const total = balance + coins * currentPrice;
+        const profit = total - 100;
+        const percent = ((profit / 100) * 100).toFixed(1);
+
+        document.getElementById('balance').innerText = '$' + balance.toFixed(2);
+        document.getElementById('coins').innerText = coins;
+        document.getElementById('totalWorth').innerText = '$' + total.toFixed(2);
+        document.getElementById('price-tag').innerText = '$' + currentPrice.toFixed(2);
+
+        const profitEl = document.getElementById('profitDisplay');
+        profitEl.innerText = (profit >= 0 ? '+' : '') + '$' + profit.toFixed(2) + ' (' + percent + '%)';
+        profitEl.style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+
+        let rank = 'BRONZE';
+        if (total >= 10000) rank = 'LEGENDARY 👑';
+        else if (total >= 5000) rank = 'DIAMOND 💎';
+        else if (total >= 2000) rank = 'GOLD 🏆';
+        else if (total >= 500) rank = 'SILVER';
+        document.getElementById('rank').innerText = rank;
+        document.getElementById('pauseBtn').innerText = isPaused ? '▶ Resume' : '⏸ Pause';
+        renderHistory();
+        saveState();
+    }
+
+    function buy() {
+        if (isPaused) return;
+        const amt = getAmount('buy');
+        if (amt <= 0) {
+            setEvent('Balans yetarli emas yoki qiymat 0.');
+            return;
+        }
+
+        const cost = currentPrice * amt;
+        if (balance >= cost) {
+            balance -= cost;
+            coins += amt;
+            addHistory('BUY', amt);
+            setEvent(`Sotib olindi: ${amt} coin @ $${currentPrice.toFixed(2)}`);
+            updateUI();
+        } else {
+            setEvent('Balans yetarli emas. MAX tugmasini tanlang yoki kamroq miqdor kiriting.');
+        }
+    }
+
+    function sell() {
+        if (isPaused) return;
+        const amt = getAmount('sell');
+        if (amt <= 0) {
+            setEvent('Sotish uchun coin yo‘q.');
+            return;
+        }
+
+        if (coins >= amt) {
+            coins -= amt;
+            balance += currentPrice * amt;
+            addHistory('SELL', amt);
+            setEvent(`Sotildi: ${amt} coin @ $${currentPrice.toFixed(2)}`);
+            updateUI();
+        } else {
+            setEvent('Sizda yetarli coin yo‘q.');
+        }
+    }
+
+    function getAmount(action) {
+        const active = document.querySelector('.amount-btn.active');
+        const val = active ? active.dataset.amount : '1';
+        if (val === 'max') {
+            return action === 'sell' ? coins : Math.floor(balance / currentPrice);
+        }
+        return parseInt(val, 10) || 0;
+    }
+
+    function setEvent(message) {
+        document.getElementById('event-log').innerText = message;
+    }
+
+    function renderHistory() {
+        document.getElementById('history').innerHTML = tradeHistory.map(t => {
+            const color = t.action === 'BUY' ? '#22c55e' : '#ef4444';
+            return `<div class="trade-item">
+                <span><strong style="color:${color}">${t.action}</strong> ×${t.amount}</span>
+                <span>$${t.price} <small>${t.time}</small></span>
+            </div>`;
+        }).join('');
+    }
+
+    function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            balance,
+            coins,
+            currentPrice,
+            priceHistory,
+            labels,
+            counter,
+            isPaused,
+            tradeHistory
+        }));
+    }
+
+    document.querySelectorAll('.amount-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+        isPaused = !isPaused;
+        document.getElementById('pauseBtn').innerText = isPaused ? '▶ Resume' : '⏸ Pause';
+        setEvent(isPaused ? 'Bozor to‘xtatildi.' : 'Bozor yana ishlamoqda.');
+        saveState();
+    });
+
+    function addHistory(action, amount) {
+        tradeHistory.unshift({
+            action,
+            amount,
+            price: currentPrice.toFixed(2),
+            time: new Date().toLocaleTimeString('uz-UZ', { hour:'2-digit', minute:'2-digit' })
+        });
+        if (tradeHistory.length > 5) tradeHistory.pop();
+        renderHistory();
+        saveState();
+    }
+
+    setInterval(() => {
+        if (isPaused) return;
+
+        let change = currentPrice * (Math.random() * 0.14 - 0.07);
+
+        if (Math.random() > 0.87) {
+            const events = [
+                { msg: '🚀 Elon Musk tvit qildi! Narx otilib chiqdi!', multi: 1.25 },
+                { msg: '💥 Regulyator bosimi! Narx tushdi!', multi: 0.68 },
+                { msg: '🔥 Katta hamkorlik! Bozor yashil!', multi: 1.22 },
+                { msg: '🐳 Kitlar sotishni boshladi!', multi: 0.80 }
+            ];
+            const ev = events[Math.floor(Math.random() * events.length)];
+            change = currentPrice * (ev.multi - 1);
+            setEvent(ev.msg);
+        }
+
+        currentPrice = Math.max(0.5, currentPrice + change);
+        priceHistory.push(currentPrice);
+        labels.push(counter++);
+        if (priceHistory.length > 35) {
+            priceHistory.shift();
+            labels.shift();
+        }
+
+        document.getElementById('price-tag').style.color = change > 0 ? 'var(--green)' : 'var(--red)';
+        chart.update();
+        updateUI();
+    }, 1400);
+
+    updateUI();
+</script>
+</body>
+</html>
