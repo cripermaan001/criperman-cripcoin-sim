@@ -1110,6 +1110,7 @@ function buy(){
   addHist('BUY',amt);
   flash('Sotib olindi: '+amt+' × $'+currentPrice.toFixed(2));
   updateUI();
+  saveGame();
 }
 
 function sell(){
@@ -1130,6 +1131,7 @@ function sell(){
   addHist('SELL',amt);
   flash('Sotildi: '+amt+' × $'+currentPrice.toFixed(2)+' | PnL: '+(profit>=0?'+':'')+profit.toFixed(2)+'$');
   updateUI();
+  saveGame();
 }
 
 function getAmt(side){
@@ -1272,6 +1274,7 @@ document.getElementById('pauseBtn').addEventListener('click',()=>{
   isPaused=!isPaused;
   document.getElementById('pauseBtn').textContent=isPaused?'▶ Resume':'⏸ Pause';
   flash(isPaused?"Bozor to'xtatildi.":'Bozor yana ishlamoqda.');
+  saveGame();
 });
 
 document.getElementById('achBtn').addEventListener('click',()=>{
@@ -1290,6 +1293,76 @@ document.querySelectorAll('.tf-btn').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.tf-btn').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
 }));
+
+// ══════════════════════════════════════
+// SAVE/LOAD SYSTEM
+// ══════════════════════════════════════
+const STORAGE_KEY = 'cripcoin_save';
+
+function saveGame() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      balance,
+      coins,
+      currentPrice,
+      isPaused,
+      tradeHistory,
+      totalTrades,
+      consecutiveProfit,
+      crashCount,
+      wasInLoss,
+      holdingStart,
+      lastActionTime,
+      speedTrades,
+      boughtDuringEvent,
+      eventProfit,
+      activeEvent,
+      lastBuyPrice,
+      dayHigh,
+      dayLow,
+      candles,
+      currentCandle,
+      chartMode,
+      linePoints
+    }));
+    localStorage.setItem('crc_ach', JSON.stringify([...unlocked]));
+  } catch (e) {
+    console.warn('Save failed:', e);
+  }
+}
+
+function loadGame() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (saved) {
+      balance = saved.balance ?? balance;
+      coins = saved.coins ?? coins;
+      currentPrice = saved.currentPrice ?? currentPrice;
+      isPaused = saved.isPaused ?? isPaused;
+      tradeHistory = Array.isArray(saved.tradeHistory) ? saved.tradeHistory : tradeHistory;
+      totalTrades = saved.totalTrades ?? totalTrades;
+      consecutiveProfit = saved.consecutiveProfit ?? consecutiveProfit;
+      crashCount = saved.crashCount ?? crashCount;
+      wasInLoss = saved.wasInLoss ?? wasInLoss;
+      holdingStart = saved.holdingStart ?? holdingStart;
+      lastActionTime = saved.lastActionTime ?? lastActionTime;
+      speedTrades = Array.isArray(saved.speedTrades) ? saved.speedTrades : speedTrades;
+      boughtDuringEvent = saved.boughtDuringEvent ?? boughtDuringEvent;
+      eventProfit = saved.eventProfit ?? eventProfit;
+      activeEvent = saved.activeEvent ?? activeEvent;
+      lastBuyPrice = saved.lastBuyPrice ?? lastBuyPrice;
+      dayHigh = saved.dayHigh ?? dayHigh;
+      dayLow = saved.dayLow ?? dayLow;
+      candles = Array.isArray(saved.candles) ? saved.candles : candles;
+      currentCandle = saved.currentCandle ?? currentCandle;
+      chartMode = saved.chartMode ?? chartMode;
+      linePoints = Array.isArray(saved.linePoints) ? saved.linePoints : linePoints;
+    }
+    unlocked = new Set(JSON.parse(localStorage.getItem('crc_ach') || '[]'));
+  } catch (e) {
+    console.warn('Load failed:', e);
+  }
+}
 
 // ── INIT ──
 updateUI();
